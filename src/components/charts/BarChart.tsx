@@ -1,17 +1,12 @@
-import React, { useState, useMemo } from 'react'
-import * as d3 from 'd3'
-import { useChartDimensions } from '@/hooks/useChartDimensions'
-import { formatCurrency } from '@/utils/chartUtils'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
-import { CHART_DIMENSIONS } from '@/constants'
-
-export interface SkillData {
-  skill: string
-  totalPostings: number
-  avgSalary: number
-  topCity: string
-}
+import React, { useState, useMemo } from 'react';
+import * as d3 from 'd3';
+import { useChartDimensions } from '@/hooks/useChartDimensions';
+import { formatCurrency } from '@/utils/chartUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { CHART_DIMENSIONS } from '@/constants';
+import { AxisBottom, AxisLeft } from '@/components/charts/shared/Axis';
+import { SkillData } from '@/types';
 
 interface BarChartProps {
   data: SkillData[]
@@ -36,6 +31,7 @@ interface BarHoverData {
   height: number
 }
 
+// Interactive bar chart with tooltips
 export default function BarChart({ 
   data, 
   height, 
@@ -45,16 +41,15 @@ export default function BarChart({
     height: height ?? CHART_DIMENSIONS.height,
     ...customDimensions,
     margin: customDimensions?.margin ?? CHART_DIMENSIONS.margin
-  })
+  });
 
-  const [hover, setHover] = useState<BarHoverData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [hover, setHover] = useState<BarHoverData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Validate data
   const isValidData = useMemo(() => 
     Array.isArray(data) && data.length > 0,
     [data]
-  )
+  );
 
   if (!isValidData) {
     return (
@@ -63,16 +58,15 @@ export default function BarChart({
           <p className="text-neutral-400">Invalid or empty data provided</p>
         </div>
       </ErrorBoundary>
-    )
+    );
   }
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading bar chart..." />
+    return <LoadingSpinner message="Loading bar chart..." />;
   }
 
-  // Create scales
   const { xScale, yScale, color } = useMemo(() => {
-    const maxPostings = d3.max(data, d => d.totalPostings) ?? 1
+    const maxPostings = d3.max(data, d => d.totalPostings) ?? 1;
 
     return {
       xScale: d3.scaleBand<string>()
@@ -86,8 +80,8 @@ export default function BarChart({
         .range([dimensions.height - dimensions.margin.bottom, dimensions.margin.top]),
       color: d3.scaleOrdinal<string, string>(d3.schemeTableau10)
         .domain(data.map(d => d.skill))
-    }
-  }, [data, dimensions])
+    };
+  }, [data, dimensions]);
 
   return (
     <ErrorBoundary>
@@ -97,22 +91,18 @@ export default function BarChart({
           role="img" 
           aria-label="Interactive bar chart showing job postings by skill"
         >
-          {/* X-axis */}
           <g transform={`translate(0,${dimensions.height - dimensions.margin.bottom})`}>
-            <AxisBottom scale={xScale} ticks={data.length} fmt={(d: string) => d} />
+            <AxisBottom scale={xScale} ticks={data.length} format={(d: string) => d} />
           </g>
           
-          {/* Y-axis */}
           <g transform={`translate(${dimensions.margin.left},0)`}>
-            <AxisLeft scale={yScale} ticks={5} fmt={(d: number) => d.toString()} />
+            <AxisLeft scale={yScale} ticks={5} format={(d: number) => d.toString()} />
           </g>
-
-          {/* Bars */}
           {data.map((d, i) => {
-            const barWidth = xScale.bandwidth()
-            const barHeight = dimensions.height - dimensions.margin.bottom - (yScale(d.totalPostings) ?? 0)
-            const barX = xScale(d.skill) ?? 0
-            const barY = yScale(d.totalPostings) ?? 0
+            const barWidth = xScale.bandwidth();
+            const barHeight = dimensions.height - dimensions.margin.bottom - (yScale(d.totalPostings) ?? 0);
+            const barX = xScale(d.skill) ?? 0;
+            const barY = yScale(d.totalPostings) ?? 0;
 
             return (
               <g key={`${d.skill}-${i}`}>
@@ -136,7 +126,6 @@ export default function BarChart({
                   aria-label={`${d.skill}: ${d.totalPostings} postings, average salary ${formatCurrency(d.avgSalary)}`}
                 />
                 
-                {/* Value label on top of bars */}
                 <text 
                   x={barX + barWidth / 2}
                   y={barY - 5}
@@ -147,10 +136,9 @@ export default function BarChart({
                   {d.totalPostings}
                 </text>
               </g>
-            )
+            );
           })}
 
-          {/* Tooltip */}
           {hover && (
             <g transform={`translate(${hover.x + hover.width / 2}, ${hover.y - 10})`} pointerEvents="none">
               <foreignObject x={-120} y={0} width={240} height={120}>
@@ -168,23 +156,6 @@ export default function BarChart({
         </svg>
       </div>
     </ErrorBoundary>
-  )
+  );
 }
 
-function AxisBottom({ scale, ticks = 5, fmt }: { scale: d3.AxisScale<any>; ticks?: number; fmt: (d: any) => string }) {
-  const ref = React.useRef<SVGGElement | null>(null)
-  React.useEffect(() => { 
-    d3.select(ref.current)
-      .call(d3.axisBottom(scale).ticks(ticks).tickFormat(fmt as any) as any)
-      .selectAll("text")
-      .attr("transform", "rotate(-45)")
-      .style("text-anchor", "end")
-  }, [scale, ticks, fmt])
-  return <g ref={ref} className="text-[11px] fill-neutral-300" />
-}
-
-function AxisLeft({ scale, ticks = 5, fmt }: { scale: d3.AxisScale<any>; ticks?: number; fmt: (d: any) => string }) {
-  const ref = React.useRef<SVGGElement | null>(null)
-  React.useEffect(() => { d3.select(ref.current).call(d3.axisLeft(scale).ticks(ticks).tickFormat(fmt as any) as any) }, [scale, ticks, fmt])
-  return <g ref={ref} className="text-[11px] fill-neutral-300" />
-}

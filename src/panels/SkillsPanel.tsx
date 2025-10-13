@@ -1,27 +1,26 @@
-import React from 'react'
-import * as d3 from 'd3'
-import BarChart, { SkillData } from '@/components/charts/BarChart'
-import { JOBS_RAW } from '@/data/jobs'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { useResponsiveDimensions } from '@/hooks/useResponsiveDimensions'
+import React from 'react';
+import * as d3 from 'd3';
+import BarChart from '@/components/charts/BarChart';
+import { SkillData } from '@/types';
+import { JOBS_RAW } from '@/data/jobs';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useResponsiveDimensions } from '@/hooks/useResponsiveDimensions';
 
 export default function SkillsPanel() {
-  const dimensions = useResponsiveDimensions()
+  const dimensions = useResponsiveDimensions();
 
-  // Aggregate job data by skill using d3.rollup
   const aggregatedData = React.useMemo((): SkillData[] => {
     const grouped = d3.rollup(
       JOBS_RAW,
       v => {
-        const totalPostings = d3.sum(v, d => d.postings)
-        const avgSalary = d3.mean(v, d => d.avgSalary) ?? 0
+        const totalPostings = d3.sum(v, d => d.postings);
+        const avgSalary = d3.mean(v, d => d.avgSalary) ?? 0;
         
-        // Find the city with the most postings for this skill
-        const cityGroups = d3.rollup(v, group => d3.sum(group, d => d.postings), d => d.city)
-        const entries = Array.from(cityGroups.entries())
-        const maxCount = d3.max(entries, ([, count]) => count)
-        const topCityEntry = entries.find(([, count]) => count === maxCount)
-        const topCity = topCityEntry ? topCityEntry[0] : ''
+        const cityGroups = d3.rollup(v, group => d3.sum(group, d => d.postings), d => d.city);
+        const entries = Array.from(cityGroups.entries());
+        const maxCount = d3.max(entries, ([, count]) => count);
+        const topCityEntry = entries.find(([, count]) => count === maxCount);
+        const topCity = topCityEntry ? topCityEntry[0] : '';
         
         return {
           totalPostings,
@@ -35,7 +34,7 @@ export default function SkillsPanel() {
     return Array.from(grouped.entries()).map(([skill, data]) => ({
       skill,
       ...data
-    })).sort((a, b) => b.totalPostings - a.totalPostings) // Sort by postings descending
+    })).sort((a, b) => b.totalPostings - a.totalPostings)
   }, [])
 
   return (
@@ -80,5 +79,5 @@ export default function SkillsPanel() {
         </div>
       </div>
     </ErrorBoundary>
-  )
+  );
 }

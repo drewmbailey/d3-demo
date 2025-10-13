@@ -1,28 +1,28 @@
-import React, { createContext, useContext, useId, useState } from 'react'
-import { clsx } from 'clsx'
+import React, { createContext, useContext, useId, useState } from 'react';
+import { clsx } from 'clsx';
 
-type Ctx = { index: number; setIndex: (i: number) => void; tabsId: string }
-const TabsCtx = createContext<Ctx | null>(null)
+type Ctx = { index: number; setIndex: (i: number) => void; tabsId: string };
+const TabsCtx = createContext<Ctx | null>(null);
 
 export function Tabs({ defaultIndex = 0, onChange, children }: { defaultIndex?: number; onChange?: (i: number) => void; children: React.ReactNode }) {
-  const [index, setIndex] = useState(defaultIndex)
-  const tabsId = useId()
-  const set = (i: number) => { setIndex(i); onChange?.(i) }
-  return <TabsCtx.Provider value={{ index, setIndex: set, tabsId }}>{children}</TabsCtx.Provider>
+  const [index, setIndex] = useState(defaultIndex);
+  const tabsId = useId();
+  const set = (i: number) => { setIndex(i); onChange?.(i); };
+  return <TabsCtx.Provider value={{ index, setIndex: set, tabsId }}>{children}</TabsCtx.Provider>;
 }
 
 export function TabList({ children }: { children: React.ReactNode }) {
-  const ctx = useTabs()
+  const ctx = useTabs();
   return (
     <div role="tablist" aria-label="Sections" className="flex gap-2 mb-4">
       {React.Children.map(children, (child, i) => React.isValidElement(child) ? React.cloneElement(child, { i }) : child)}
     </div>
-  )
+  );
 }
 
 export function Tab({ children, i = 0 }: { children: React.ReactNode; i?: number }) {
-  const { index, setIndex, tabsId } = useTabs()
-  const selected = index === i
+  const { index, setIndex, tabsId } = useTabs();
+  const selected = index === i;
   return (
     <button
       role="tab"
@@ -36,11 +36,11 @@ export function Tab({ children, i = 0 }: { children: React.ReactNode; i?: number
     >
       {children}
     </button>
-  )
+  );
 }
 
 export function TabPanels({ children }: { children: React.ReactNode }) {
-  const { index, tabsId } = useTabs()
+  const { index, tabsId } = useTabs();
   return (
     <div>
       {React.Children.map(children, (child, i) => (
@@ -55,13 +55,13 @@ export function TabPanels({ children }: { children: React.ReactNode }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
-export function TabPanel({ children }: { children: React.ReactNode }) { return <>{children}</> }
+export function TabPanel({ children }: { children: React.ReactNode }) { return <>{children}</>; }
 
 function useTabs() {
-  const ctx = useContext(TabsCtx)
-  if (!ctx) throw new Error('Tabs components must be used within <Tabs>')
-  return ctx
+  const ctx = useContext(TabsCtx);
+  if (!ctx) throw new Error('Tabs components must be used within <Tabs>');
+  return ctx;
 }

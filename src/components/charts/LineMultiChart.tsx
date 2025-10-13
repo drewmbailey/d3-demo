@@ -1,8 +1,8 @@
-import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react'
-import * as d3 from 'd3'
-import { LineChartProps, TooltipData, ChartMode } from '@/types'
-import { useChartDimensions } from '@/hooks/useChartDimensions'
-import { useD3Zoom } from '@/hooks/useD3Zoom'
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
+import * as d3 from 'd3';
+import { LineChartProps, TooltipData, ChartMode } from '@/types';
+import { useChartDimensions } from '@/hooks/useChartDimensions';
+import { useD3Zoom } from '@/hooks/useD3Zoom';
 import { 
   createScales, 
   createLineGenerator, 
@@ -12,29 +12,92 @@ import {
   formatShortDate,
   debounce,
   validateSeriesData 
-} from '@/utils/chartUtils'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
+} from '@/utils/chartUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { AxisBottom, AxisLeft } from '@/components/charts/shared/Axis';
 
+// Interactive multi-line chart with zoom and tooltips
 export default function LineMultiChart({ 
   series, 
   height, 
   mode = 'absolute', 
   dimensions: customDimensions 
 }: LineChartProps) {
-  const ref = useRef<SVGSVGElement | null>(null)
-  const [hover, setHover] = useState<TooltipData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [currentTransform, setCurrentTransform] = useState<d3.ZoomTransform | null>(null)
+  const ref = useRef<SVGSVGElement | null>(null);
+  const [hover, setHover] = useState<TooltipData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTransform, setCurrentTransform] = useState<d3.ZoomTransform | null>(null);
 
   const dimensions = useChartDimensions({ 
     height, 
     ...customDimensions 
-  })
+  });
 
-  // Validate data
-  const isValidData = useMemo(() => validateSeriesData(series), [series])
+  const isValidData = useMemo(() => validateSeriesData(series), [series]);
   
+  // Create scales and line generator - use empty series as fallback to avoid errors
+  const { x, y, color, normalized } = useMemo(() => {
+    if (!isValidData) {
+      // Return minimal valid scales for empty data
+      const emptyX = d3.scaleTime().domain([new Date(), new Date()]).range([dimensions.margin.left, dimensions.width - dimensions.margin.right]);
+      const emptyY = d3.scaleLinear().domain([0, 1]).range([dimensions.height - dimensions.margin.bottom, dimensions.margin.top]);
+      const emptyColor = d3.scaleOrdinal<string, string>(d3.schemeTableau10).domain([]);
+      return { x: emptyX, y: emptyY, color: emptyColor, normalized: [] };
+    }
+    return createScales(series, dimensions, mode);
+  }, [series, dimensions, mode, isValidData]);
+
+  const line = useMemo(() => 
+    createLineGenerator(x, y), 
+    [x, y]
+  );
+
+  const handleZoom = useCallback((event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+    const svg = d3.select(ref.current);
+    if (!svg.node()) return;
+    
+    svg.select('g.chart-content').attr('transform', event.transform.toString());
+    
+    const gX = svg.select<SVGGElement>('g.x-axis');
+    const zx = event.transform.rescaleX(x);
+    gX.call(d3.axisBottom(zx).ticks(6) as any);
+    
+    setCurrentTransform(event.transform);
+  }, [x]);
+
+  const debouncedMouseHandler = useMemo(() => {
+    return debounce((svg: SVGSVGElement, clientX: number, clientY: number) => {
+      const rect = svg.getBoundingClientRect();
+      const scaleX = svg.clientWidth / dimensions.width;
+      const mouseX = (clientX - rect.left) / scaleX;
+      
+      const currentXScale = currentTransform ? currentTransform.rescaleX(x) : x;
+      const xm = currentXScale.invert(mouseX);
+      const nearest = findNearestPoints(normalized, xm);
+      
+      setHover({ x: mouseX, date: xm, nearest });
+    }, 16);
+  }, [x, normalized, currentTransform, dimensions.width]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGRectElement>) => {
+    const svg = e.currentTarget.ownerSVGElement;
+    if (svg) {
+      debouncedMouseHandler(svg, e.clientX, e.clientY);
+    }
+  }, [debouncedMouseHandler]);
+
+  const handleMouseLeave = useCallback(() => {
+    setHover(null);
+  }, []);
+
+  useD3Zoom({
+    svgRef: ref,
+    dimensions,
+    onZoom: handleZoom
+  });
+
+  // Early returns after all hooks
   if (!isValidData) {
     return (
       <ErrorBoundary>
@@ -42,80 +105,12 @@ export default function LineMultiChart({
           <p className="text-neutral-400">Invalid or empty data provided</p>
         </div>
       </ErrorBoundary>
-    )
+    );
   }
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading chart..." />
+    return <LoadingSpinner message="Loading chart..." />;
   }
-
-  // Create scales and normalized data
-  const { x, y, color, normalized } = useMemo(() => 
-    createScales(series, dimensions, mode), 
-    [series, dimensions, mode]
-  )
-
-  const line = useMemo(() => 
-    createLineGenerator(x, y), 
-    [x, y]
-  )
-
-  // Zoom handler - let D3 handle the SVG transformations automatically
-  const handleZoom = useCallback((event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
-    const svg = d3.select(ref.current)
-    if (!svg.node()) return
-    
-    console.log('Zoom event:', event.transform)
-    
-    // Apply the transform to the chart content group
-    svg.select('g.chart-content').attr('transform', event.transform.toString())
-    
-    // Update the x-axis with the transformed scale
-    const gX = svg.select<SVGGElement>('g.x-axis')
-    const zx = event.transform.rescaleX(x)
-    gX.call(d3.axisBottom(zx).ticks(6) as any)
-    
-    // Store the current transform for cursor tracking
-    setCurrentTransform(event.transform)
-  }, [x])
-
-  // Create a debounced handler that uses SVG viewBox for reliable coordinates
-  const debouncedMouseHandler = useMemo(() => {
-    return debounce((svg: SVGSVGElement, clientX: number, clientY: number) => {
-      // Use SVG's viewBox and clientWidth for coordinate calculation
-      // This is more reliable than getBoundingClientRect() when viewport changes
-      const rect = svg.getBoundingClientRect()
-      const scaleX = svg.clientWidth / dimensions.width
-      const mouseX = (clientX - rect.left) / scaleX
-      
-      // Use the current transformed scale if zoom is active, otherwise use the original scale
-      const currentXScale = currentTransform ? currentTransform.rescaleX(x) : x
-      const xm = currentXScale.invert(mouseX)
-      const nearest = findNearestPoints(normalized, xm)
-      
-      // Use the scaled mouse position for cursor line
-      setHover({ x: mouseX, date: xm, nearest })
-    }, 16)
-  }, [x, normalized, currentTransform, dimensions.width])
-
-  // Mouse move handler
-  const handleMouseMove = useCallback((e: React.MouseEvent<SVGRectElement>) => {
-    const svg = e.currentTarget.ownerSVGElement
-    if (svg) {
-      debouncedMouseHandler(svg, e.clientX, e.clientY)
-    }
-  }, [debouncedMouseHandler])
-
-  const handleMouseLeave = useCallback(() => {
-    setHover(null)
-  }, [])
-
-  // Setup zoom behavior
-  useD3Zoom({
-    svgRef: ref,
-    dimensions,
-    onZoom: handleZoom
-  })
 
   return (
     <ErrorBoundary>
@@ -127,10 +122,10 @@ export default function LineMultiChart({
           aria-label="Interactive line chart showing data trends over time"
         >
           <g className="x-axis" transform={`translate(0,${dimensions.height - dimensions.margin.bottom})`}>
-            <AxisBottom scale={x} ticks={6} fmt={formatShortDate} />
+            <AxisBottom scale={x} ticks={6} format={formatShortDate} />
           </g>
           <g transform={`translate(${dimensions.margin.left},0)`}>
-            <AxisLeft scale={y} ticks={5} fmt={(d: number) => formatNumber(d, mode)} />
+            <AxisLeft scale={y} ticks={5} format={(d: number) => formatNumber(d, mode)} />
           </g>
 
           <g className="chart-content" transform={`translate(${dimensions.margin.left},0)`}>
@@ -194,17 +189,5 @@ export default function LineMultiChart({
         </svg>
       </div>
     </ErrorBoundary>
-  )
-}
-
-function AxisBottom({ scale, ticks = 5, fmt }: { scale: d3.ScaleTime<number, number>; ticks?: number; fmt: (d: Date) => string }) {
-  const ref = useRef<SVGGElement | null>(null)
-  useEffect(() => { d3.select(ref.current).call(d3.axisBottom(scale).ticks(ticks).tickFormat(fmt as any) as any) }, [scale, ticks, fmt])
-  return <g ref={ref} className="text-[11px] fill-neutral-300" />
-}
-
-function AxisLeft({ scale, ticks = 5, fmt }: { scale: d3.ScaleLinear<number, number>; ticks?: number; fmt: (d: number) => string }) {
-  const ref = useRef<SVGGElement | null>(null)
-  useEffect(() => { d3.select(ref.current).call(d3.axisLeft(scale).ticks(ticks).tickFormat(fmt as any) as any) }, [scale, ticks, fmt])
-  return <g ref={ref} className="text-[11px] fill-neutral-300" />
+  );
 }

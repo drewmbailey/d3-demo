@@ -1,4 +1,4 @@
-export type JobRow = { city: string; skill: string; postings: number; avgSalary: number }
+export type JobRow = { city: string; skill: string; postings: number; avgSalary: number };
 
 export const JOBS_RAW: JobRow[] = [
   // Boston, MA
@@ -42,4 +42,4 @@ export const JOBS_RAW: JobRow[] = [
   { city: 'Seattle, WA',         skill: 'AI',    postings: 300, avgSalary: 185000 },
   { city: 'Seattle, WA',         skill: 'Python', postings: 320, avgSalary: 180000 },
   { city: 'Seattle, WA',         skill: 'Go',    postings: 140, avgSalary: 185000 },
-]
+];

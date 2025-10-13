@@ -1,9 +1,9 @@
-import React from 'react'
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@/components/tabs/Tabs'
-import StocksPanel from '@/panels/StocksPanel'
-import JobsPanel from '@/panels/JobsPanel'
-import FrameworksPanel from '@/panels/FrameworksPanel'
-import SkillsPanel from '@/panels/SkillsPanel'
+import React from 'react';
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@/components/tabs/Tabs';
+import StocksPanel from '@/panels/StocksPanel';
+import JobsPanel from '@/panels/JobsPanel';
+import FrameworksPanel from '@/panels/FrameworksPanel';
+import SkillsPanel from '@/panels/SkillsPanel';
 
 export default function App() {
   return (
@@ -30,15 +30,15 @@ export default function App() {
         </Tabs>
       </main>
     </div>
-  )
+  );
 }
 
 // micro‑frontend: post our height so the host page can auto-resize iframe
 function postHeight() {
-  const h = document.documentElement.scrollHeight
-  parent?.postMessage({ type: 'TTE_HEIGHT', height: h }, '*')
+  const h = document.documentElement.scrollHeight;
+  parent?.postMessage({ type: 'TTE_HEIGHT', height: h }, '*');
 }
 
 // Resize notifications on content changes
-const ro = new ResizeObserver(() => postHeight())
-ro.observe(document.documentElement)
+const ro = new ResizeObserver(() => postHeight());
+ro.observe(document.documentElement);

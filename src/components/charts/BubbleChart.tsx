@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react'
-import * as d3 from 'd3'
-import { BubbleChartProps } from '@/types'
-import { useChartDimensions } from '@/hooks/useChartDimensions'
-import { formatCurrency } from '@/utils/chartUtils'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
-import { CHART_DIMENSIONS } from '@/constants'
+import React, { useState, useMemo } from 'react';
+import * as d3 from 'd3';
+import { BubbleChartProps } from '@/types';
+import { useChartDimensions } from '@/hooks/useChartDimensions';
+import { formatCurrency } from '@/utils/chartUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { CHART_DIMENSIONS } from '@/constants';
+import { AxisBottom, AxisLeft } from '@/components/charts/shared/Axis';
 
 interface BubbleHoverData {
   d: { city: string; postings: number; avgSalary: number }
@@ -13,6 +14,7 @@ interface BubbleHoverData {
   cy: number
 }
 
+// Interactive bubble chart with hover tooltips
 export default function BubbleChart({ 
   data, 
   xTicks, 
@@ -23,16 +25,15 @@ export default function BubbleChart({
     height: height ?? CHART_DIMENSIONS.bubbleHeight,
     ...customDimensions,
     margin: customDimensions?.margin ?? CHART_DIMENSIONS.bubbleMargin
-  })
+  });
 
-  const [hover, setHover] = useState<BubbleHoverData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [hover, setHover] = useState<BubbleHoverData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Validate data
   const isValidData = useMemo(() => 
     Array.isArray(data) && data.length > 0 && Array.isArray(xTicks) && xTicks.length > 0,
     [data, xTicks]
-  )
+  );
 
   if (!isValidData) {
     return (
@@ -41,17 +42,16 @@ export default function BubbleChart({
           <p className="text-neutral-400">Invalid or empty data provided</p>
         </div>
       </ErrorBoundary>
-    )
+    );
   }
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading bubble chart..." />
+    return <LoadingSpinner message="Loading bubble chart..." />;
   }
 
-  // Create scales
   const { xScale, yScale, rScale, color } = useMemo(() => {
-    const maxPosts = d3.max(data, d => d.postings) ?? 1
-    const yExtent = d3.extent(data, d => d.avgSalary) as [number, number]
+    const maxPosts = d3.max(data, d => d.postings) ?? 1;
+    const yExtent = d3.extent(data, d => d.avgSalary) as [number, number];
 
     return {
       xScale: d3.scalePoint<string>()
@@ -67,8 +67,8 @@ export default function BubbleChart({
         .range([6, 48]),
       color: d3.scaleOrdinal<string, string>(d3.schemeTableau10)
         .domain(xTicks)
-    }
-  }, [data, xTicks, dimensions])
+    };
+  }, [data, xTicks, dimensions]);
 
   return (
     <ErrorBoundary>
@@ -79,10 +79,10 @@ export default function BubbleChart({
           aria-label="Interactive bubble chart showing job market data by city"
         >
           <g transform={`translate(0,${dimensions.height - dimensions.margin.bottom})`}>
-            <AxisBottom scale={xScale} ticks={xTicks.length} fmt={(d: string) => d} />
+            <AxisBottom scale={xScale} ticks={xTicks.length} format={(d: string) => d} />
           </g>
           <g transform={`translate(${dimensions.margin.left},0)`}>
-            <AxisLeft scale={yScale} ticks={5} fmt={formatCurrency} />
+            <AxisLeft scale={yScale} ticks={5} format={formatCurrency} />
           </g>
 
           {data.map((d, i) => (
@@ -126,17 +126,6 @@ export default function BubbleChart({
         </svg>
       </div>
     </ErrorBoundary>
-  )
+  );
 }
 
-function AxisBottom({ scale, ticks = 5, fmt }: { scale: d3.AxisScale<any>; ticks?: number; fmt: (d: any) => string }) {
-  const ref = React.useRef<SVGGElement | null>(null)
-  React.useEffect(() => { d3.select(ref.current).call(d3.axisBottom(scale).ticks(ticks).tickFormat(fmt as any) as any) }, [scale, ticks, fmt])
-  return <g ref={ref} className="text-[11px] fill-neutral-300" />
-}
-
-function AxisLeft({ scale, ticks = 5, fmt }: { scale: d3.AxisScale<any>; ticks?: number; fmt: (d: any) => string }) {
-  const ref = React.useRef<SVGGElement | null>(null)
-  React.useEffect(() => { d3.select(ref.current).call(d3.axisLeft(scale).ticks(ticks).tickFormat(fmt as any) as any) }, [scale, ticks, fmt])
-  return <g ref={ref} className="text-[11px] fill-neutral-300" />
-}

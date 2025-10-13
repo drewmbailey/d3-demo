@@ -1,33 +1,33 @@
-import React from 'react'
-import BubbleChart from '@/components/charts/BubbleChart'
-import { JOBS_RAW } from '@/data/jobs'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { useResponsiveDimensions } from '@/hooks/useResponsiveDimensions'
+import React from 'react';
+import BubbleChart from '@/components/charts/BubbleChart';
+import { JOBS_RAW } from '@/data/jobs';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useResponsiveDimensions } from '@/hooks/useResponsiveDimensions';
 
 export default function JobsPanel() {
-  const [skill, setSkill] = React.useState('React')
-  const [isLoading, setIsLoading] = React.useState(false)
+  const [skill, setSkill] = React.useState('React');
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const dimensions = useResponsiveDimensions()
+  const dimensions = useResponsiveDimensions();
 
   const rows = React.useMemo(() => 
     JOBS_RAW.filter(d => d.skill === skill), 
     [skill]
-  )
+  );
   
   const cities = React.useMemo(() => 
     rows.map(r => r.city), 
     [rows]
-  )
+  );
 
   const availableSkills = React.useMemo(() => 
     Array.from(new Set(JOBS_RAW.map(d => d.skill))), 
     []
-  )
+  );
 
   const handleSkillChange = React.useCallback((newSkill: string) => {
-    setSkill(newSkill)
-  }, [])
+    setSkill(newSkill);
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -57,5 +57,5 @@ export default function JobsPanel() {
         />
       </div>
     </ErrorBoundary>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react'
-import * as d3 from 'd3'
-import { LineChartProps, TooltipData } from '@/types'
-import { useChartDimensions } from '@/hooks/useChartDimensions'
-import { useD3Zoom } from '@/hooks/useD3Zoom'
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
+import * as d3 from 'd3';
+import { LineChartProps, TooltipData } from '@/types';
+import { useChartDimensions } from '@/hooks/useChartDimensions';
+import { useD3Zoom } from '@/hooks/useD3Zoom';
 import { 
   createScales, 
   formatNumber, 
@@ -10,10 +10,12 @@ import {
   formatShortDate,
   debounce,
   validateSeriesData 
-} from '@/utils/chartUtils'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
+} from '@/utils/chartUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { AxisBottom, AxisLeft } from '@/components/charts/shared/Axis';
 
+// Interactive stacked area chart with zoom and tooltips
 export default function StackedAreaChart({ 
   series, 
   height, 
@@ -28,31 +30,22 @@ export default function StackedAreaChart({
     ...customDimensions 
   })
 
-  // Validate data
   const isValidData = useMemo(() => validateSeriesData(series), [series])
   
-  if (!isValidData) {
-    return (
-      <ErrorBoundary>
-        <div className="flex items-center justify-center p-8 bg-neutral-900/50 border border-neutral-800 rounded-2xl">
-          <p className="text-neutral-400">Invalid or empty data provided</p>
-        </div>
-      </ErrorBoundary>
-    )
-  }
-
-  if (isLoading) {
-    return <LoadingSpinner message="Loading chart..." />
-  }
-
-  // Create stacked data and scales
+  // Create scales and area generators - use empty series as fallback to avoid errors
   const { x, y, color, stackedData, yMax } = useMemo(() => {
-    // Get all unique dates and sort them
+    if (!isValidData) {
+      // Return minimal valid scales for empty data
+      const emptyX = d3.scaleTime().domain([new Date(), new Date()]).range([dimensions.margin.left, dimensions.width - dimensions.margin.right])
+      const emptyY = d3.scaleLinear().domain([0, 1]).range([dimensions.height - dimensions.margin.bottom, dimensions.margin.top])
+      const emptyColor = d3.scaleOrdinal<string, string>(d3.schemeTableau10).domain([])
+      return { x: emptyX, y: emptyY, color: emptyColor, stackedData: [], yMax: 1   };
+}
+
     const allDates = Array.from(new Set(
       series.flatMap(s => s.values.map(v => v.x.getTime()))
     )).sort((a, b) => a - b).map(t => new Date(t))
 
-    // Create stacked data structure
     const stacked = allDates.map(date => {
       const obj: { [key: string]: number | Date } = { date }
       let cumulative = 0
@@ -68,7 +61,6 @@ export default function StackedAreaChart({
       return obj
     })
 
-    // Create scales
     const x = d3.scaleTime()
       .domain(d3.extent(allDates) as [Date, Date])
       .range([dimensions.margin.left, dimensions.width - dimensions.margin.right])
@@ -85,10 +77,9 @@ export default function StackedAreaChart({
     const color = d3.scaleOrdinal<string, string>(d3.schemeTableau10)
       .domain(series.map(s => s.id))
 
-    return { x, y, color, stackedData: stacked, yMax }
-  }, [series, dimensions])
+    return { x, y, color, stackedData: stacked, yMax   };
+}, [series, dimensions, isValidData])
 
-  // Create area generator
   const area = useMemo(() => {
     return d3.area<{ [key: string]: number | Date }>()
       .x(d => x(d.date as Date))
@@ -97,7 +88,6 @@ export default function StackedAreaChart({
       .curve(d3.curveMonotoneX)
   }, [x, y, series])
 
-  // Create individual area generators for each series
   const areaGenerators = useMemo(() => {
     return series.map(s => 
       d3.area<{ [key: string]: number | Date }>()
@@ -108,7 +98,6 @@ export default function StackedAreaChart({
     )
   }, [x, y, series])
 
-  // Debounced zoom handler
   const handleZoom = useCallback(debounce((event: any) => {
     const svg = d3.select(ref.current)
     if (!svg.node()) return
@@ -116,7 +105,6 @@ export default function StackedAreaChart({
     const gX = svg.select<SVGGElement>('g.x-axis')
     const zx = event.transform.rescaleX(x)
     
-    // Update all area paths
     svg.selectAll('path.area')
       .attr('d', (d: any, i: number) => {
         const areaGen = d3.area<{ [key: string]: number | Date }>()
@@ -130,30 +118,24 @@ export default function StackedAreaChart({
     gX.call(d3.axisBottom(zx).ticks(6) as any)
   }, 16), [x, y, series, stackedData])
 
-  // Setup zoom behavior
   useD3Zoom({
     svgRef: ref,
     dimensions,
     onZoom: handleZoom
   })
 
-  // Create a debounced handler that uses SVG viewBox for reliable coordinates
   const debouncedMouseHandler = useMemo(() => {
     return debounce((svg: SVGSVGElement, clientX: number, clientY: number) => {
-      // Use SVG's viewBox and clientWidth for coordinate calculation
-      // This is more reliable than getBoundingClientRect() when viewport changes
       const rect = svg.getBoundingClientRect()
       const scaleX = svg.clientWidth / dimensions.width
       const mouseX = (clientX - rect.left) / scaleX
       
       const xm = x.invert(mouseX)
       
-      // Find the closest date
       const closestDate = stackedData.reduce((prev, curr) => 
         Math.abs((curr.date as Date).getTime() - xm.getTime()) < Math.abs((prev.date as Date).getTime() - xm.getTime()) ? curr : prev
       )
       
-      // Create nearest points for tooltip
       const nearest = series.map(s => ({
         id: s.id,
         y: ((closestDate[`${s.id}_end`] as number) || 0) - ((closestDate[s.id] as number) || 0)
@@ -163,17 +145,31 @@ export default function StackedAreaChart({
     }, 16)
   }, [x, stackedData, series, dimensions.width])
 
-  // Mouse move handler
   const handleMouseMove = useCallback((e: React.MouseEvent<SVGRectElement>) => {
     const svg = e.currentTarget.ownerSVGElement
     if (svg) {
       debouncedMouseHandler(svg, e.clientX, e.clientY)
-    }
-  }, [debouncedMouseHandler])
+  };
+}, [debouncedMouseHandler])
 
   const handleMouseLeave = useCallback(() => {
     setHover(null)
   }, [])
+
+  // Early returns after all hooks
+  if (!isValidData) {
+    return (
+      <ErrorBoundary>
+        <div className="flex items-center justify-center p-8 bg-neutral-900/50 border border-neutral-800 rounded-2xl">
+          <p className="text-neutral-400">Invalid or empty data provided</p>
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
+  if (isLoading) {
+    return <LoadingSpinner message="Loading chart..." />
+  }
 
   return (
     <ErrorBoundary>
@@ -185,10 +181,10 @@ export default function StackedAreaChart({
           aria-label="Interactive stacked area chart showing data composition over time"
         >
           <g className="x-axis" transform={`translate(0,${dimensions.height - dimensions.margin.bottom})`}>
-            <AxisBottom scale={x} ticks={6} fmt={formatShortDate} />
+            <AxisBottom scale={x} ticks={6} format={formatShortDate} />
           </g>
           <g transform={`translate(${dimensions.margin.left},0)`}>
-            <AxisLeft scale={y} ticks={5} fmt={(d: number) => formatNumber(d, 'absolute')} />
+            <AxisLeft scale={y} ticks={5} format={(d: number) => formatNumber(d, 'absolute')} />
           </g>
 
           {series.map((s, i) => (
@@ -252,17 +248,6 @@ export default function StackedAreaChart({
         </svg>
       </div>
     </ErrorBoundary>
-  )
+  );
 }
 
-function AxisBottom({ scale, ticks = 5, fmt }: { scale: d3.ScaleTime<number, number>; ticks?: number; fmt: (d: Date) => string }) {
-  const ref = useRef<SVGGElement | null>(null)
-  useEffect(() => { d3.select(ref.current).call(d3.axisBottom(scale).ticks(ticks).tickFormat(fmt as any) as any) }, [scale, ticks, fmt])
-  return <g ref={ref} className="text-[11px] fill-neutral-300" />
-}
-
-function AxisLeft({ scale, ticks = 5, fmt }: { scale: d3.ScaleLinear<number, number>; ticks?: number; fmt: (d: number) => string }) {
-  const ref = useRef<SVGGElement | null>(null)
-  useEffect(() => { d3.select(ref.current).call(d3.axisLeft(scale).ticks(ticks).tickFormat(fmt as any) as any) }, [scale, ticks, fmt])
-  return <g ref={ref} className="text-[11px] fill-neutral-300" />
-}

@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
-import { ChartDimensions } from '@/types'
-import { CHART_DIMENSIONS } from '@/constants'
+import { useMemo } from 'react';
+import { ChartDimensions } from '@/types';
+import { CHART_DIMENSIONS } from '@/constants';
 
 export function useChartDimensions(
   customDimensions?: Partial<ChartDimensions>
@@ -14,5 +14,5 @@ export function useChartDimensions(
       bottom: customDimensions?.margin?.bottom ?? CHART_DIMENSIONS.margin.bottom,
       left: customDimensions?.margin?.left ?? CHART_DIMENSIONS.margin.left,
     },
-  }), [customDimensions])
+  }), [customDimensions]);
 }

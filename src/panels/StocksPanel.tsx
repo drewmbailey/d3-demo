@@ -1,22 +1,22 @@
-import React from 'react'
-import * as d3 from 'd3'
-import LineMultiChart from '@/components/charts/LineMultiChart'
-import { STOCKS_RAW } from '@/data/stocks'
-import { Series, ChartMode } from '@/types'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { useResponsiveDimensions } from '@/hooks/useResponsiveDimensions'
+import React from 'react';
+import * as d3 from 'd3';
+import LineMultiChart from '@/components/charts/LineMultiChart';
+import { STOCKS_RAW } from '@/data/stocks';
+import { Series, ChartMode } from '@/types';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useResponsiveDimensions } from '@/hooks/useResponsiveDimensions';
 
 export default function StocksPanel() {
-  const [enabled, setEnabled] = React.useState<string[]>(['AAPL','NVDA','TSLA','MSFT','AMZN'])
-  const [mode, setMode] = React.useState<ChartMode>('absolute')
-  const [isLoading, setIsLoading] = React.useState(false)
+  const [enabled, setEnabled] = React.useState<string[]>(['AAPL','NVDA','TSLA','MSFT','AMZN']);
+  const [mode, setMode] = React.useState<ChartMode>('absolute');
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const dimensions = useResponsiveDimensions()
+  const dimensions = useResponsiveDimensions();
 
   const bySym = React.useMemo(() => 
     d3.group(STOCKS_RAW.map(d => ({...d, date: new Date(d.date)})), d => d.symbol), 
     []
-  )
+  );
 
   const series: Series[] = React.useMemo(() => 
     Array.from(bySym.entries())
@@ -28,18 +28,18 @@ export default function StocksPanel() {
           .map(d => ({ x: d.date as Date, y: d.close })) 
       })), 
     [bySym, enabled]
-  )
+  );
 
   const toggleSymbol = React.useCallback((symbol: string) => {
     setEnabled(prev => prev.includes(symbol) 
       ? prev.filter(x => x !== symbol) 
       : [...prev, symbol]
-    )
-  }, [])
+    );
+  }, []);
 
   const handleModeChange = React.useCallback((newMode: ChartMode) => {
-    setMode(newMode)
-  }, [])
+    setMode(newMode);
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -78,5 +78,5 @@ export default function StocksPanel() {
         />
       </div>
     </ErrorBoundary>
-  )
+  );
 }

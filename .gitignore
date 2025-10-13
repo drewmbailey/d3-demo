@@ -114,3 +114,11 @@ temp/
 *.zip
 *.tar.gz
 *.rar
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# Lock files (choose one package manager)
+# Uncomment the line for the package manager you're not using:
+# package-lock.json
+# yarn.lock
