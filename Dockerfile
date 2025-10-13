@@ -1,18 +1,16 @@
 # Build stage
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY package.json ./
-COPY package-lock.json* pnpm-lock.yaml* yarn.lock* ./ 2>/dev/null || true
-RUN npm i -g pnpm && pnpm install --frozen-lockfile || pnpm install
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
-RUN pnpm build
+RUN npm run build
 
-# Run stage (static preview via Vite)
+# Run stage (static file server)
 FROM node:22-alpine AS run
 WORKDIR /app
 COPY --from=build /app/dist ./dist
-COPY package.json .
-RUN npm i -g vite@latest
+RUN npm install -g serve
 ENV PORT=4173
 EXPOSE 4173
-CMD ["vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
+CMD ["serve", "-s", "dist", "-l", "4173"]
