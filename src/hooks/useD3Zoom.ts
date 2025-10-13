@@ -21,7 +21,7 @@ export function useD3Zoom({ svgRef, dimensions, onZoom }: UseD3ZoomProps) {
       .translateExtent([[0, 0], [dimensions.width, dimensions.height]])
       .on('zoom', onZoom || (() => {}))
 
-    svg.call(zoom)
+    svg.call(zoom as any)
     zoomRef.current = zoom
 
     return () => {

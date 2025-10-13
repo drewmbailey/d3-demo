@@ -12,7 +12,7 @@ export function useResponsiveDimensions(): ChartDimensions {
         CHART_DIMENSIONS.width
       )
       
-      let height = CHART_DIMENSIONS.height
+      let height: number = CHART_DIMENSIONS.height
       if (window.innerWidth < BREAKPOINTS.md) {
         height = Math.max(280, height * 0.8)
       }

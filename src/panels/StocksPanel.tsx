@@ -7,7 +7,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useResponsiveDimensions } from '@/hooks/useResponsiveDimensions'
 
 export default function StocksPanel() {
-  const [enabled, setEnabled] = React.useState<string[]>(['AAPL','NVDA','TSLA'])
+  const [enabled, setEnabled] = React.useState<string[]>(['AAPL','NVDA','TSLA','MSFT','AMZN'])
   const [mode, setMode] = React.useState<ChartMode>('absolute')
   const [isLoading, setIsLoading] = React.useState(false)
 

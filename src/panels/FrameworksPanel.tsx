@@ -1,13 +1,13 @@
 import React from 'react'
 import * as d3 from 'd3'
-import LineMultiChart from '@/components/charts/LineMultiChart'
+import StackedAreaChart from '@/components/charts/StackedAreaChart'
 import { FRAMEWORKS_RAW } from '@/data/frameworks'
 import { Series } from '@/types'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useResponsiveDimensions } from '@/hooks/useResponsiveDimensions'
 
 export default function FrameworksPanel() {
-  const [enabled, setEnabled] = React.useState<string[]>(['React','Vue','Angular','Svelte'])
+  const [enabled, setEnabled] = React.useState<string[]>(['React','Vue','Angular','Svelte','Next.js'])
   const [isLoading, setIsLoading] = React.useState(false)
 
   const dimensions = useResponsiveDimensions()
@@ -56,9 +56,8 @@ export default function FrameworksPanel() {
             </button>
           ))}
         </div>
-        <LineMultiChart 
+        <StackedAreaChart 
           series={series} 
-          mode="absolute"
           dimensions={dimensions}
         />
       </div>

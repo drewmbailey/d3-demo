@@ -3,6 +3,7 @@ import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@/components/tabs/Tabs'
 import StocksPanel from '@/panels/StocksPanel'
 import JobsPanel from '@/panels/JobsPanel'
 import FrameworksPanel from '@/panels/FrameworksPanel'
+import SkillsPanel from '@/panels/SkillsPanel'
 
 export default function App() {
   return (
@@ -18,11 +19,13 @@ export default function App() {
             <Tab>Stocks</Tab>
             <Tab>Job Market</Tab>
             <Tab>Frameworks</Tab>
+            <Tab>Skills</Tab>
           </TabList>
           <TabPanels>
             <TabPanel><StocksPanel /></TabPanel>
             <TabPanel><JobsPanel /></TabPanel>
             <TabPanel><FrameworksPanel /></TabPanel>
+            <TabPanel><SkillsPanel /></TabPanel>
           </TabPanels>
         </Tabs>
       </main>

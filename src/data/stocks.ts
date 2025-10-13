@@ -2,7 +2,7 @@ export type StockRow = { date: string; symbol: string; close: number }
 
 export const STOCKS_RAW: StockRow[] = (() => {
   const start = new Date('2025-08-01')
-  const syms = ['AAPL', 'NVDA', 'TSLA']
+  const syms = ['AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN']
   const out: StockRow[] = []
   for (let i = 0; i < 30; i++) {
     const d = new Date(start); d.setDate(d.getDate() + i)

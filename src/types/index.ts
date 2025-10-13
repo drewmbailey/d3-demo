@@ -57,6 +57,19 @@ export interface BubbleChartProps {
   dimensions?: Partial<ChartDimensions>
 }
 
+export interface BarChartProps {
+  data: SkillData[]
+  height?: number
+  dimensions?: Partial<ChartDimensions>
+}
+
+export interface SkillData {
+  skill: string
+  totalPostings: number
+  avgSalary: number
+  topCity: string
+}
+
 // Tooltip data
 export interface TooltipData {
   x: number

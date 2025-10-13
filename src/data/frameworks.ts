@@ -2,7 +2,7 @@ export type FrameworkRow = { date: string; name: string; value: number }
 
 export const FRAMEWORKS_RAW: FrameworkRow[] = (() => {
   const start = new Date('2020-01-01')
-  const names = ['React','Vue','Angular','Svelte'] as const
+  const names = ['React','Vue','Angular','Svelte','Next.js'] as const
   const out: FrameworkRow[] = []
   for (let i = 0; i < 36; i++) {
     const d = new Date(start); d.setMonth(d.getMonth() + i)
