@@ -24,21 +24,30 @@ export function AxisBottom({ scale, ticks = 5, format, className }: AxisProps) {
     
     d3.select(ref.current).call(axis as any);
     
-    d3.select(ref.current).select('.domain')
-      .attr('d', function() {
-        const bbox = (this as SVGGraphicsElement).getBBox();
-        const y = bbox.y + bbox.height / 2;
-        return `M${bbox.x},${y}H${bbox.x + bbox.width}`;
-      })
-      .style('stroke', '#fff')
-      .style('stroke-width', '1');
+    const domainLine = d3.select(ref.current).select('.domain');
+    if (domainLine.empty()) {
+      const range = scale.range();
+      const y = 0;
+      d3.select(ref.current)
+        .insert('path', ':first-child')
+        .attr('class', 'domain')
+        .attr('d', `M${range[0]},${y}H${range[1]}`)
+        .style('stroke', '#fff')
+        .style('stroke-width', '1')
+        .style('fill', 'none');
+    } else {
+      domainLine
+        .style('stroke', '#fff')
+        .style('stroke-width', '1')
+        .style('fill', 'none')
+        .style('opacity', '1');
+    }
     
     d3.select(ref.current).selectAll('.tick line')
       .style('stroke-width', '1px')
-      .style('stroke', '#fff');
+      .style('stroke', '#fff')
+      .style('opacity', '1');
     
-    // Handle text rotation for bottom axes if needed
-    // Check if scale has bandwidth method (ScaleBand) or padding method (ScalePoint)
     if ('bandwidth' in scale || 'padding' in scale) {
       d3.select(ref.current)
         .selectAll("text")
@@ -66,18 +75,29 @@ export function AxisLeft({ scale, ticks = 5, format, className }: AxisProps) {
     
     d3.select(ref.current).call(axis as any);
     
-    d3.select(ref.current).select('.domain')
-      .attr('d', function() {
-        const bbox = (this as SVGGraphicsElement).getBBox();
-        const x = bbox.x + bbox.width / 2;
-        return `M${x},${bbox.y}V${bbox.y + bbox.height}`;
-      })
-      .style('stroke', '#fff')
-      .style('stroke-width', '1');
+    const domainLine = d3.select(ref.current).select('.domain');
+    if (domainLine.empty()) {
+      const range = scale.range();
+      const x = 0;
+      d3.select(ref.current)
+        .insert('path', ':first-child')
+        .attr('class', 'domain')
+        .attr('d', `M${x},${range[1]}V${range[0]}`)
+        .style('stroke', '#fff')
+        .style('stroke-width', '1')
+        .style('fill', 'none');
+    } else {
+      domainLine
+        .style('stroke', '#fff')
+        .style('stroke-width', '1')
+        .style('fill', 'none')
+        .style('opacity', '1');
+    }
     
     d3.select(ref.current).selectAll('.tick line')
       .style('stroke-width', '1px')
-      .style('stroke', '#fff');
+      .style('stroke', '#fff')
+      .style('opacity', '1');
   }, [scale, ticks, format]);
   
   return <g ref={ref} className={className || "text-[11px] fill-neutral-300"} />;
