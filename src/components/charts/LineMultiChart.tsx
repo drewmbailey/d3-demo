@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
+import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import * as d3 from 'd3';
 import { LineChartProps, TooltipData, ChartMode } from '@/types';
 import { useChartDimensions } from '@/hooks/useChartDimensions';
@@ -72,13 +72,15 @@ export default function LineMultiChart({
       const scaleX = svg.clientWidth / dimensions.width;
       const mouseX = (clientX - rect.left) / scaleX;
       
+      // Adjust mouse position to account for chart content positioning
+      const adjustedMouseX = mouseX - dimensions.margin.left;
       const currentXScale = currentTransform ? currentTransform.rescaleX(x) : x;
-      const xm = currentXScale.invert(mouseX);
+      const xm = currentXScale.invert(adjustedMouseX);
       const nearest = findNearestPoints(normalized, xm);
       
-      setHover({ x: mouseX, date: xm, nearest });
+      setHover({ x: adjustedMouseX, date: xm, nearest });
     }, 16);
-  }, [x, normalized, currentTransform, dimensions.width]);
+  }, [x, normalized, currentTransform, dimensions.width, dimensions.margin.left]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<SVGRectElement>) => {
     const svg = e.currentTarget.ownerSVGElement;
@@ -121,14 +123,14 @@ export default function LineMultiChart({
           role="img" 
           aria-label="Interactive line chart showing data trends over time"
         >
-          <g className="x-axis" transform={`translate(0,${dimensions.height - dimensions.margin.bottom})`}>
+          <g className="x-axis" transform={`translate(${dimensions.margin.left},${dimensions.height - dimensions.margin.bottom})`}>
             <AxisBottom scale={x} ticks={6} format={formatShortDate} />
           </g>
-          <g transform={`translate(${dimensions.margin.left},0)`}>
+          <g transform={`translate(${dimensions.margin.left},${dimensions.margin.top})`}>
             <AxisLeft scale={y} ticks={5} format={(d: number) => formatNumber(d, mode)} />
           </g>
 
-          <g className="chart-content" transform={`translate(${dimensions.margin.left},0)`}>
+          <g className="chart-content" transform={`translate(${dimensions.margin.left},${dimensions.margin.top})`}>
             {normalized.map(s => (
               <path 
                 key={s.id} 
@@ -165,7 +167,7 @@ export default function LineMultiChart({
           />
 
           {hover && (
-            <g transform={`translate(${hover.x}, ${dimensions.margin.top})`} pointerEvents="none">
+            <g transform={`translate(${hover.x + dimensions.margin.left}, ${dimensions.margin.top})`} pointerEvents="none">
               <line 
                 x1={0} x2={0} 
                 y1={0} y2={dimensions.height - dimensions.margin.top - dimensions.margin.bottom} 

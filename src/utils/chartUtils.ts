@@ -18,12 +18,12 @@ export function createScales(
 
   const x = d3.scaleTime()
     .domain(xDomain)
-    .range([dimensions.margin.left, dimensions.width - dimensions.margin.right]);
+    .range([0, dimensions.width - dimensions.margin.left - dimensions.margin.right]);
   
   const y = d3.scaleLinear()
     .domain([yDomain[0] ?? 0, yDomain[1] ?? 1])
     .nice()
-    .range([dimensions.height - dimensions.margin.bottom, dimensions.margin.top]);
+    .range([dimensions.height - dimensions.margin.top - dimensions.margin.bottom, 0]);
 
   const color = d3.scaleOrdinal<string, string>(d3.schemeTableau10)
     .domain(normalized.map(s => s.id));
